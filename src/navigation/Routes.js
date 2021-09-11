@@ -9,12 +9,16 @@ import Loading from '../components/Loading';
 export default function Routes() {
 
   const { user, setUser } = useContext(AuthContext);
+  // console.log('user from Context state :');
+  // console.log(user);
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(true);
 
   // Handle user state changes
-  function onAuthStateChangedFun(user) {
-    setUser(user);
+  function onAuthStateChangedFun(userObj) {
+    // console.log('onAuthStateChangedFun');
+    // console.log(userObj);
+    setUser(userObj);
     if (initializing) setInitializing(false);
     setLoading(false);
   }
@@ -28,7 +32,8 @@ export default function Routes() {
     return <Loading />;
   }
 
-  console.log(user)
+  // console.log(typeof(user));
+  // console.log(user);
   return (
     <NavigationContainer>
       { user ? <HomeStack /> : <AuthStack /> }

@@ -17,7 +17,7 @@ export default function LoginScreen({ navigation }) {
   // Email : rushabhjain@gmail.com
   // Password : Rushabh@12345
 
-  // Email : mainshsharma@gmail.com
+  // Email : manishsharma@gmail.com
   // Password : Manish@12345
 
   // Email : test@test.com

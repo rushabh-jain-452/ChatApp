@@ -65,7 +65,8 @@ function ChatApp() {
 
 export default function HomeStack({ navigation }) {
   return (
-    <ModalStack.Navigator mode="modal" screenOptions={{headerShown: false}}>
+    // <ModalStack.Navigator mode="modal" screenOptions={{headerShown: false}}>
+    <ModalStack.Navigator screenOptions={{headerShown: false, presentation: 'modal'}}>
       <ModalStack.Screen name="ChatApp" component={ChatApp} />
       <ModalStack.Screen name="AddRoom" component={AddRoomScreen} />
     </ModalStack.Navigator>

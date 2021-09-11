@@ -1,9 +1,19 @@
-import React, { useState } from 'react';
-import { GiftedChat, Bubble, Send } from 'react-native-gifted-chat';
+import React, { useState, useEffect, useContext } from 'react';
+import { GiftedChat, Bubble, Send, SystemMessage } from 'react-native-gifted-chat';
+// Fixed one issue manually : https://github.com/FaridSafi/react-native-gifted-chat/issues/2090
 import { IconButton } from 'react-native-paper';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import firestore from '@react-native-firebase/firestore';
 
-export default function RoomScreen() {
+import { AuthContext } from '../navigation/AuthProvider';
+
+export default function RoomScreen({ route }) {
+
+  const { thread } = route.params;
+
+  const { user } = useContext(AuthContext);
+  const currentUser = user.toJSON();
+
   const [messages, setMessages] = useState([
     /**
      * Mock message data
@@ -27,9 +37,76 @@ export default function RoomScreen() {
     }
   ]);
 
+  useEffect(() => {
+    // console.log({ user });
+    const messagesListener = firestore()
+      .collection('THREADS')
+      .doc(thread._id)
+      .collection('MESSAGES')
+      .orderBy('createdAt', 'desc')
+      .onSnapshot(querySnapshot => {
+        const messages = querySnapshot.docs.map(doc => {
+          const firebaseData = doc.data();
+
+          const data = {
+            _id: doc.id,
+            text: '',
+            createdAt: new Date().getTime(),
+            ...firebaseData
+          };
+
+          console.log(firebaseData.system);
+          // if (!firebaseData.system) {
+          if (firebaseData.system != true) {
+            // console.log(firebaseData.user);
+            data.user = {
+              ...firebaseData.user,
+              name: firebaseData.user.email
+            };
+          }
+
+          // console.log(data);
+          return data;
+        });
+
+        setMessages(messages);
+      });
+
+    return () => messagesListener();
+  }, []);
+
   // helper method that is sends a message
-  function handleSend(newMessage = []) {
-    setMessages(GiftedChat.append(messages, newMessage));
+  // function handleSend(newMessage = []) {
+  //   setMessages(GiftedChat.append(messages, newMessage));
+  // }
+  async function handleSend(messages) {
+    const text = messages[0].text;
+
+    await firestore()
+      .collection('THREADS')
+      .doc(thread._id)
+      .collection('MESSAGES')
+      .add({
+        text,
+        createdAt: new Date().getTime(),
+        user: {
+          _id: currentUser.uid,
+          email: currentUser.email
+        }
+      });
+
+    await firestore()
+      .collection('THREADS')
+      .doc(thread._id)
+      .set(
+        {
+          latestMessage: {
+            text,
+            createdAt: new Date().getTime()
+          }
+        },
+        { merge: true }
+      );
   }
 
   function renderBubble(props) {
@@ -77,11 +154,21 @@ export default function RoomScreen() {
     );
   }
 
+  function renderSystemMessage(props) {
+    return (
+      <SystemMessage
+        {...props}
+        wrapperStyle={styles.systemMessageWrapper}
+        textStyle={styles.systemMessageText}
+      />
+    );
+  }
+
   return (
     <GiftedChat
       messages={messages}
-      onSend={newMessage => handleSend(newMessage)}
-      user={{ _id: 1, name: 'User Test' }}
+      onSend={handleSend}
+      user={{ _id: currentUser.uid }}
       renderBubble={renderBubble}
       placeholder="Type your message here..."
       showUserAvatar
@@ -90,6 +177,8 @@ export default function RoomScreen() {
       scrollToBottom
       scrollToBottomComponent={scrollToBottomComponent}
       renderLoading={renderLoading}
+      renderSystemMessage={renderSystemMessage}
+      renderUsernameOnMessage
     />
   );
 }
@@ -108,4 +197,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
+  systemMessageWrapper: {
+    backgroundColor: '#6646ee',
+    borderRadius: 4,
+    padding: 5
+  },
+  systemMessageText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: 'bold'
+  }
 });

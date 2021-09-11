@@ -20,13 +20,16 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     const unsubscribe = firestore()
       .collection('THREADS')
-      // .orderBy('latestMessage.createdAt', 'desc')
+      .orderBy('latestMessage.createdAt', 'desc')
       .onSnapshot((querySnapshot) => {
         const threads = querySnapshot.docs.map((documentSnapshot) => {
           return {
             _id: documentSnapshot.id,
-            // give defaults
+            // give defaults, will be used if these fields are not there in actual data
             name: '',
+            latestMessage: {
+              text: ''
+            },
             ...documentSnapshot.data(),
           };
         });
@@ -49,8 +52,14 @@ export default function HomeScreen({ navigation }) {
     return <Loading />;
   }
 
+  // console.log(threads);
   return (
     <View style={styles.container}>
+      <FormButton 
+        modeValue='contained' 
+        title='Logout' 
+        onPress={() => logout()}
+      />
       <FlatList
         data={threads}
         keyExtractor={(item) => item._id}
@@ -61,7 +70,7 @@ export default function HomeScreen({ navigation }) {
           >
             <List.Item
               title={item.name}
-              description='Item description'
+              description={item.latestMessage.text}
               titleNumberOfLines={1}
               titleStyle={styles.listTitle}
               descriptionStyle={styles.listDescription}
